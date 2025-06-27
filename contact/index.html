@@ -305,6 +305,35 @@
                         <div id="formStatus" style="margin-top:10px;"></div>
                     </form>
                 </div>
+                <script>
+                    // Add popup on successful send
+                    document.addEventListener('DOMContentLoaded', function () {
+                        const form = document.getElementById('contactForm');
+                        form.addEventListener('submit', function (e) {
+                            // The rest of the logic is in the main script, so we just listen for success
+                            const origThen = firebase.database.Reference.prototype.then;
+                            // Patch only once
+                            if (!window._popupPatched) {
+                                const origPush = firebase.database.Reference.prototype.push;
+                                firebase.database.Reference.prototype.push = function () {
+                                    const result = origPush.apply(this, arguments);
+                                    if (result && typeof result.then === 'function') {
+                                        const origResultThen = result.then;
+                                        result.then = function (onFulfilled, onRejected) {
+                                            return origResultThen.call(this, function (value) {
+                                                // Show popup on success
+                                                alert('Your message has been sent!');
+                                                if (onFulfilled) return onFulfilled(value);
+                                            }, onRejected);
+                                        };
+                                    }
+                                    return result;
+                                };
+                                window._popupPatched = true;
+                            }
+                        });
+                    });
+                </script>
                 <!-- ...existing code... -->
 
                 <div class="col-lg-5 mt-7 mt-lg-0">
